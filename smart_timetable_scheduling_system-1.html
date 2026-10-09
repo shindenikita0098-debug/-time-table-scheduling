@@ -1,0 +1,145 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Smart Time Table Scheduling System</title>
+<style>
+:root{--blue:#174ea6;--light:#eef4ff;--ink:#1f2937;--line:#d7deea}
+*{box-sizing:border-box}body{margin:0;font-family:Arial,sans-serif;background:#f4f7fb;color:var(--ink)}
+header{background:var(--blue);color:#fff;padding:18px 22px}header h1{font-size:22px;margin:0 0 6px}header p{margin:0;font-size:13px}
+nav{display:flex;flex-wrap:wrap;gap:7px;padding:12px;background:#fff;border-bottom:1px solid var(--line);position:sticky;top:0;z-index:2}
+button,.btn{border:0;border-radius:7px;padding:10px 12px;background:var(--blue);color:white;cursor:pointer;font-weight:600}
+nav button{background:#e8eef9;color:#153e7d}nav button.active{background:var(--blue);color:white}
+main{max-width:1100px;margin:20px auto;padding:0 14px}.panel{background:#fff;border:1px solid var(--line);border-radius:12px;padding:18px;margin-bottom:16px;box-shadow:0 2px 8px #1725540a}
+h2{font-size:20px;margin:0 0 14px}h3{font-size:16px;margin:15px 0 8px}
+.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:12px}
+label{display:block;font-size:13px;font-weight:bold;margin-bottom:5px}input,select{width:100%;padding:10px;border:1px solid #cbd5e1;border-radius:7px;background:#fff;margin-bottom:10px}
+form button{margin-top:3px}.muted{color:#64748b;font-size:13px}.error{color:#b91c1c;font-weight:bold}.success{color:#166534;font-weight:bold}
+.hidden{display:none!important}.stat{background:var(--light);padding:15px;border-radius:10px}.stat b{font-size:25px;display:block;margin-top:5px}
+table{width:100%;border-collapse:collapse;background:#fff;font-size:13px}th,td{border:1px solid #cbd5e1;padding:8px;text-align:left;vertical-align:top}th{background:#eaf0fb}td button{padding:6px 8px;background:#b42318;font-size:12px}
+.table-wrap{overflow-x:auto}.timetable td{min-width:125px;height:72px}.timetable th:first-child{min-width:105px}
+.notice{background:#fff7d6;border:1px solid #f1d27a;border-radius:8px;padding:11px;font-size:13px}
+.loginbox{max-width:440px;margin:35px auto}.pill{display:inline-block;padding:4px 8px;background:#e8eef9;border-radius:20px;font-size:12px}
+footer{text-align:center;padding:22px;color:#64748b;font-size:12px}
+@media print{header,nav,.no-print,footer{display:none!important}body{background:#fff}main{max-width:none;margin:0;padding:0}.panel{border:0;box-shadow:none;padding:0}.timetable{font-size:10px}.timetable td{height:60px;min-width:90px}}
+</style>
+</head>
+<body>
+<header><h1>Smart Time Table Scheduling System</h1><p>Education & College Management • Student Project Prototype</p></header>
+<div id="loginView" class="loginbox panel">
+<h2>Admin Login</h2><p class="muted">Sign in to manage teachers, subjects, classes, rooms and timetables.</p>
+<form id="loginForm"><label for="loginId">Login ID</label><input id="loginId" autocomplete="username" required placeholder="Enter admin ID">
+<label for="loginPassword">Password</label><input id="loginPassword" type="password" autocomplete="current-password" required placeholder="Enter password">
+<button type="submit">Login</button> <span id="loginMessage" class="error"></span></form>
+<div class="notice" style="margin-top:14px"><b>Demo login for first use</b><br>Login ID: <code>admin</code><br>Password: <code>admin123</code><br><span class="muted">Change these demo credentials in the code before presenting the project. This local-only demo is not secure enough for real college data.</span></div>
+</div>
+<div id="appView" class="hidden">
+<nav id="nav">
+<button data-page="home" class="active">🏠 Home</button><button data-page="teachers">👩‍🏫 Add Teachers</button><button data-page="subjects">📚 Add Subjects</button><button data-page="classes">🏫 Class/Division</button><button data-page="rooms">🚪 Add Rooms</button><button data-page="slots">⏰ Time Slots</button><button data-page="generate">⚙️ Generate Timetable</button><button data-page="view">📅 View Timetable</button><button id="logoutBtn" style="margin-left:auto;background:#b42318;color:white">Logout</button>
+</nav>
+<main>
+<section id="page-home" class="page">
+<div class="panel"><h2>Admin Dashboard</h2><p>Welcome! First add teachers, subjects, classes, rooms and time slots. Then generate your timetable.</p><div class="grid">
+<div class="stat">Teachers<b id="countTeachers">0</b></div><div class="stat">Subjects<b id="countSubjects">0</b></div><div class="stat">Classes/Divisions<b id="countClasses">0</b></div><div class="stat">Rooms<b id="countRooms">0</b></div><div class="stat">Time Slots<b id="countSlots">0</b></div>
+</div></div>
+<div class="panel"><h2>Recommended workflow</h2><ol><li>Add teachers with unique teacher IDs.</li><li>Add subjects and assign a teacher to each subject.</li><li>Add classes and divisions, for example SYBSC IT — A.</li><li>Add rooms and daily lecture time slots.</li><li>Generate the timetable and review any unassigned subjects.</li><li>Open View Timetable and press Print / Save as PDF.</li></ol><p class="notice">Data is saved in this browser on this device using local storage. It will not automatically appear on another phone or computer.</p></div>
+</section>
+<section id="page-teachers" class="page hidden"><div class="panel"><h2>Add Teachers</h2><form id="teacherForm"><div class="grid"><div><label>Teacher ID</label><input name="id" required placeholder="T001"></div><div><label>Teacher Name</label><input name="name" required placeholder="e.g. Priya Sharma"></div><div><label>Email (optional)</label><input name="email" type="email" placeholder="teacher@college.edu"></div></div><button>Add Teacher</button></form></div><div class="panel"><h2>Teacher List</h2><div id="teachersTable" class="table-wrap"></div></div></section>
+<section id="page-subjects" class="page hidden"><div class="panel"><h2>Add Subjects</h2><form id="subjectForm"><div class="grid"><div><label>Subject Code</label><input name="id" required placeholder="IT301"></div><div><label>Subject Name</label><input name="name" required placeholder="Python Programming"></div><div><label>Assigned Teacher</label><select name="teacher" id="subjectTeacher" required></select></div><div><label>Lectures per week</label><input name="lectures" type="number" min="1" max="10" value="3" required></div></div><button>Add Subject</button></form><p class="muted">Each subject is linked to one teacher for timetable generation.</p></div><div class="panel"><h2>Subject List</h2><div id="subjectsTable" class="table-wrap"></div></div></section>
+<section id="page-classes" class="page hidden"><div class="panel"><h2>Add Class / Division</h2><form id="classForm"><div class="grid"><div><label>Course / Class Name</label><input name="course" required placeholder="SYBSC IT"></div><div><label>Year / Semester</label><input name="year" placeholder="Semester III"></div><div><label>Division</label><input name="division" required placeholder="A"></div></div><button>Add Class</button></form></div><div class="panel"><h2>Class List</h2><div id="classesTable" class="table-wrap"></div></div></section>
+<section id="page-rooms" class="page hidden"><div class="panel"><h2>Add Rooms</h2><form id="roomForm"><div class="grid"><div><label>Room ID</label><input name="id" required placeholder="R101"></div><div><label>Room Name / Type</label><input name="name" required placeholder="Room 101 / Lab"></div><div><label>Capacity (optional)</label><input name="capacity" type="number" min="1" placeholder="60"></div></div><button>Add Room</button></form></div><div class="panel"><h2>Room List</h2><div id="roomsTable" class="table-wrap"></div></div></section>
+<section id="page-slots" class="page hidden"><div class="panel"><h2>Add Time Slots</h2><form id="slotForm"><div class="grid"><div><label>Day</label><select name="day" required><option>Monday</option><option>Tuesday</option><option>Wednesday</option><option>Thursday</option><option>Friday</option><option>Saturday</option></select></div><div><label>Slot Name</label><input name="name" required placeholder="Lecture 1"></div><div><label>Start Time</label><input name="start" type="time" required value="09:00"></div><div><label>End Time</label><input name="end" type="time" required value="10:00"></div><div><label>Break?</label><select name="break"><option value="no">No</option><option value="yes">Yes — break slot</option></select></div></div><button>Add Time Slot</button></form><p class="muted">Add one slot for each day. Use the same start/end times across weekdays for a regular college timetable.</p></div><div class="panel"><h2>Time Slot List</h2><div id="slotsTable" class="table-wrap"></div></div></section>
+<section id="page-generate" class="page hidden"><div class="panel"><h2>Generate Timetable</h2><p>The generator distributes each subject's weekly lectures across available slots. It avoids teacher and room clashes and avoids repeating a subject for the same class on the same day when alternatives are available.</p><div class="grid"><div><label>Class / Division</label><select id="generateClass"></select></div><div><label>Room assignment</label><select id="generateRoom"></select></div></div><button id="generateBtn">Generate Timetable</button> <button id="clearTimetableBtn" style="background:#64748b">Clear Generated Timetable</button><div id="generateMessage" style="margin-top:12px"></div></div><div class="panel"><h2>Generation Result</h2><div id="generationResult"></div></div></section>
+<section id="page-view" class="page hidden"><div class="panel"><div class="no-print" style="display:flex;gap:10px;align-items:center;flex-wrap:wrap"><h2 style="margin-right:auto">View Timetable</h2><label style="margin:0">Class: <select id="viewClass" style="display:inline-block;width:auto;min-width:150px;margin:0"></select></label><button id="printBtn">🖨️ Print / Save PDF</button></div><div id="timetableOutput"></div></div></section>
+</main>
+</div>
+<footer>Smart Time Table Scheduling System • Educational prototype</footer>
+<script>
+const $=s=>document.querySelector(s), $$=s=>[...document.querySelectorAll(s)];
+const KEYS={teachers:'stts_teachers',subjects:'stts_subjects',classes:'stts_classes',rooms:'stts_rooms',slots:'stts_slots',timetable:'stts_timetable'};
+let db={}; Object.keys(KEYS).forEach(k=>db[k]=JSON.parse(localStorage.getItem(KEYS[k])||'[]'));
+function save(k){localStorage.setItem(KEYS[k],JSON.stringify(db[k]));}
+function esc(s){return String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));}
+function addForm(formId,key,make,uniqueField='id'){
+ $(formId).addEventListener('submit',e=>{e.preventDefault();let f=new FormData(e.target),o=make(f);
+ if(db[key].some(x=>String(x[uniqueField]||'').toLowerCase()===String(o[uniqueField]||'').toLowerCase())){alert('This ID already exists. Please use a unique value.');return;}
+ db[key].push(o);save(key);e.target.reset();refresh();alert('Saved successfully!');});
+}
+addForm('#teacherForm','teachers',f=>({id:f.get('id').trim(),name:f.get('name').trim(),email:f.get('email').trim()}));
+addForm('#subjectForm','subjects',f=>({id:f.get('id').trim(),name:f.get('name').trim(),teacher:f.get('teacher'),lectures:Number(f.get('lectures'))}));
+addForm('#classForm','classes',f=>({id:'C'+Date.now(),course:f.get('course').trim(),year:f.get('year').trim(),division:f.get('division').trim()}),'id');
+addForm('#roomForm','rooms',f=>({id:f.get('id').trim(),name:f.get('name').trim(),capacity:f.get('capacity').trim()}));
+addForm('#slotForm','slots',f=>({id:'S'+Date.now(),day:f.get('day'),name:f.get('name').trim(),start:f.get('start'),end:f.get('end'),isBreak:f.get('break')==='yes'}),'id');
+function table(headers,rows,key){if(!rows.length)return '<p class="muted">No records yet. Add one using the form above.</p>';return '<table><thead><tr>'+headers.map(h=>'<th>'+h+'</th>').join('')+'<th>Action</th></tr></thead><tbody>'+rows.map((r,i)=>'<tr>'+r.cells.map(v=>'<td>'+esc(v)+'</td>').join('')+'<td><button onclick="removeRecord(\\''+key+'\\','+i+')">Delete</button></td></tr>').join('')+'</tbody></table>'}
+window.removeRecord=(key,i)=>{if(!confirm('Delete this record? Related timetable entries may need to be regenerated.'))return;db[key].splice(i,1);save(key);refresh();};
+function teacherName(id){return db.teachers.find(x=>x.id===id)?.name||'Unknown teacher';}
+function className(c){return [c.course,c.year,c.division?'Division '+c.division:''].filter(Boolean).join(' — ');}
+function fillSelect(sel,items,labelFn,empty){let el=$(sel),old=el.value;el.innerHTML=(empty?'<option value="">'+empty+'</option>':'')+items.map(x=>'<option value="'+esc(x.id)+'">'+esc(labelFn(x))+'</option>').join('');if(items.some(x=>x.id===old))el.value=old;}
+function refresh(){
+ $('#teachersTable').innerHTML=table(['ID','Name','Email'],db.teachers.map(x=>({cells:[x.id,x.name,x.email||'—']})),'teachers');
+ $('#subjectsTable').innerHTML=table(['Code','Subject','Teacher','Lectures/week'],db.subjects.map(x=>({cells:[x.id,x.name,teacherName(x.teacher),x.lectures]})),'subjects');
+ $('#classesTable').innerHTML=table(['Course','Year/Semester','Division'],db.classes.map(x=>({cells:[x.course,x.year||'—',x.division]})),'classes');
+ $('#roomsTable').innerHTML=table(['Room ID','Room Name','Capacity'],db.rooms.map(x=>({cells:[x.id,x.name,x.capacity||'—']})),'rooms');
+ $('#slotsTable').innerHTML=table(['Day','Slot','Start','End','Type'],db.slots.map(x=>({cells:[x.day,x.name,x.start,x.end,x.isBreak?'Break':'Lecture']})),'slots');
+ fillSelect('#subjectTeacher',db.teachers,x=>x.name,'Choose teacher');
+ fillSelect('#generateClass',db.classes,className,'Choose class');
+ fillSelect('#viewClass',db.classes,className,'Choose class');
+ fillSelect('#generateRoom',db.rooms,x=>x.id+' — '+x.name,'Choose room');
+ $('#countTeachers').textContent=db.teachers.length;$('#countSubjects').textContent=db.subjects.length;$('#countClasses').textContent=db.classes.length;$('#countRooms').textContent=db.rooms.length;$('#countSlots').textContent=db.slots.length;
+ renderTimetable();
+}
+function showPage(p){$$('.page').forEach(x=>x.classList.add('hidden'));$('#page-'+p).classList.remove('hidden');$$('#nav button[data-page]').forEach(b=>b.classList.toggle('active',b.dataset.page===p));if(p==='view')renderTimetable();}
+$$('#nav button[data-page]').forEach(b=>b.addEventListener('click',()=>showPage(b.dataset.page)));
+$('#loginForm').addEventListener('submit',e=>{e.preventDefault();const id=$('#loginId').value,password=$('#loginPassword').value;
+if(id==='admin'&&password==='admin123'){$('#loginView').classList.add('hidden');$('#appView').classList.remove('hidden');$('#loginMessage').textContent='';refresh();}
+else $('#loginMessage').textContent='Incorrect login ID or password. Please try again.';});
+$('#logoutBtn').addEventListener('click',()=>{$('#appView').classList.add('hidden');$('#loginView').classList.remove('hidden');$('#loginPassword').value='';});
+$('#viewClass').addEventListener('change',renderTimetable);
+$('#printBtn').addEventListener('click',()=>window.print());
+function slotKey(s){return s.day+'|'+s.start+'|'+s.end;}
+function renderTimetable(){
+ const cid=$('#viewClass')?.value;const cls=db.classes.find(x=>x.id===cid);const entries=db.timetable.filter(x=>x.classId===cid);
+ if(!cls){$('#timetableOutput').innerHTML='<p class="muted">Add a class and generate its timetable first.</p>';return;}
+ const days=['Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];
+ const slots=[...new Map(db.slots.filter(s=>!s.isBreak).map(s=>[s.start+'|'+s.end,{start:s.start,end:s.end,name:s.name}])).values()].sort((a,b)=>a.start.localeCompare(b.start));
+ if(!slots.length){$('#timetableOutput').innerHTML='<p class="muted">Add time slots first.</p>';return;}
+ let html='<h2 style="text-align:center;margin-top:18px">Weekly Timetable</h2><p style="text-align:center">'+esc(className(cls))+'</p><div class="table-wrap"><table class="timetable"><thead><tr><th>Day / Time</th>'+slots.map(s=>'<th>'+esc(s.name)+'<br>'+esc(s.start)+'–'+esc(s.end)+'</th>').join('')+'</tr></thead><tbody>';
+ days.forEach(day=>{let dayHas=db.slots.some(s=>s.day===day&&!s.isBreak);if(!dayHas)return;html+='<tr><th>'+day+'</th>';slots.forEach(s=>{let ent=entries.find(e=>e.day===day&&e.start===s.start&&e.end===s.end);html+='<td>'+(ent?'<b>'+esc(ent.subjectName)+'</b><br>'+esc(ent.teacherName)+'<br><span class="pill">'+esc(ent.roomName)+'</span>':'—')+'</td>';});html+='</tr>';});
+ html+='</tbody></table></div>';$('#timetableOutput').innerHTML=html;
+}
+$('#generateBtn').addEventListener('click',()=>{
+ const cid=$('#generateClass').value,rid=$('#generateRoom').value,cls=db.classes.find(x=>x.id===cid),room=db.rooms.find(x=>x.id===rid);
+ if(!cls||!room){$('#generateMessage').innerHTML='<span class="error">Please add/select a class and room first.</span>';return;}
+ if(!db.subjects.length||!db.slots.some(s=>!s.isBreak)){ $('#generateMessage').innerHTML='<span class="error">Add subjects and non-break time slots first.</span>';return;}
+ db.timetable=db.timetable.filter(e=>e.classId!==cid);
+ let slots=db.slots.filter(s=>!s.isBreak).sort((a,b)=>a.start.localeCompare(b.start));
+ const days=['Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];
+ let candidates=[];db.subjects.forEach(sub=>{for(let n=0;n<Math.max(1,Number(sub.lectures)||1);n++)candidates.push(sub);});
+ // Spread higher weekly loads first and rotate subjects to avoid same-subject repeats on a day.
+ candidates.sort((a,b)=>b.lectures-a.lectures);
+ let usedTeacher=new Set(),usedClass=new Set(),usedRoom=new Set(),placed=0,unplaced=[];
+ for(const sub of candidates){
+   let options=[];
+   for(const day of days)for(const sl of slots){
+     if(!db.slots.some(s=>s.day===day&&s.start===sl.start&&s.end===sl.end&&!s.isBreak))continue;
+     let k=day+'|'+sl.start+'|'+sl.end;
+     if(usedClass.has(k))continue;
+     if(usedTeacher.has(sub.teacher+'|'+k))continue;
+     if(usedRoom.has(room.id+'|'+k))continue;
+     if(db.timetable.some(e=>e.classId!==cid&&e.day===day&&e.start===sl.start&&e.end===sl.end&&(e.teacherId===sub.teacher||e.roomId===room.id)))continue;
+     let sameDaySameSubject=db.timetable.some(e=>e.classId===cid&&e.day===day&&e.subjectId===sub.id);
+     options.push({day,sl,k,penalty:sameDaySameSubject?1:0});
+   }
+   options.sort((a,b)=>a.penalty-b.penalty||a.day.localeCompare(b.day)||a.sl.start.localeCompare(b.sl.start));
+   let chosen=options[0];if(!chosen){unplaced.push(sub.name);continue;}
+   const entry={classId:cid,className:className(cls),subjectId:sub.id,subjectName:sub.name,teacherId:sub.teacher,teacherName:teacherName(sub.teacher),roomId:room.id,roomName:room.name,day:chosen.day,start:chosen.sl.start,end:chosen.sl.end};
+   db.timetable.push(entry);usedClass.add(chosen.k);usedTeacher.add(sub.teacher+'|'+chosen.k);usedRoom.add(room.id+'|'+chosen.k);placed++;
+ }
+ save('timetable');renderTimetable();
+ $('#generateMessage').innerHTML='<span class="success">Timetable generated. '+placed+' lecture(s) placed.</span>'+(unplaced.length?'<p class="error">Could not place '+unplaced.length+' lecture(s): '+unplaced.map(esc).join(', ')+'. Add more time slots/rooms or reduce weekly lecture counts.</p>':'<p class="success">All requested lectures were placed.</p>');
+ $('#generationResult').innerHTML='<p><b>Class:</b> '+esc(className(cls))+'</p><p><b>Assigned room:</b> '+esc(room.name)+'</p><p><b>Lectures placed:</b> '+placed+'</p><p><b>Lectures not placed:</b> '+unplaced.length+'</p><p class="muted">Please review the timetable before submitting it. This prototype uses a simple scheduling algorithm.</p>';
+});
+$('#clearTimetableBtn').addEventListener('click',()=>{if(!confirm('Clear all generated timetable entries?'))return;db.timetable=[];save('timetable');renderTimetable();$('#generationResult').innerHTML='';$('#generateMessage').textContent='Generated timetable cleared.';});
+refresh();
+</script>
+</body></html>
